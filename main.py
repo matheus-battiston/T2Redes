@@ -36,14 +36,49 @@ def cadastrar_roteadores(topologia):  # Cria uma lista de objetos ROTEADOR, perc
 
     return roteadores_cadastrados
 
-def print_arq_request(nodo, origem, destino):
-    print(f"Note over {nodo} : ARP Request<br> Who has {destino}? Tell {origem})")
+
+def print_arq_request(nodo, origem_ip, destino_ip):
+
+    print(f"Note over {nodo} : ARP Request<br> Who has {destino_ip}? Tell {origem_ip}")
 
 
-def executa_ping(nodos, roteadores, origem, destino):
-    pass
+def print_arq_reply(src_name, dst_name, src_ip, src_mac):
+    print(f"{src_name} ->> {dst_name} : ARP Reply<br>/{src_ip} is at {src_mac}")
 
-def executa_tracerout(nodos, roteadores, origem, destino):
+
+def print_echo_request(src_name, dst_name, src_ip, dst_ip, ttl):
+    print(f"{src_name} ->> {dst_name} : ICMP Echo Request<br/>src={src_ip} dst={dst_ip} ttl={ttl}")
+
+
+def print_echo_reply(src_name, dst_name, src_ip, dst_ip, ttl):
+    print(f"{src_name} ->> {dst_name} : ICMP Echo Reply<br/>src={src_ip} dst={dst_ip} ttl={ttl} ")
+
+
+def print_time_exeeded(src_name, dst_name, src_ip, dst_ip, ttl):
+    print(f"{src_name} ->> {dst_name} : ICMP Time Exceeded<br/>src={src_ip} dst={dst_ip} ttl={ttl}")
+
+
+def executa_ping(nodos, roteadores):
+    nodo_origem = get_nodo(nodos, origem)
+    nodo_destino = get_nodo(nodos, destino)
+
+    print_arq_request(origem, nodo_origem.ip, destino)
+
+    for x in nodos:
+        if x.receive_arp_request(nodo_destino.ip):
+            print_arq_reply(x.nome, origem, nodo_destino.ip, x.mac)
+
+
+def get_nodo(nodos, nome):
+    nodo = None
+    for n in nodos:
+        if n.nome == nome:
+            nodo = n
+
+    return nodo
+
+
+def executa_tracerout(nodos, roteadores):
     pass
 
 
@@ -57,8 +92,8 @@ if __name__ == '__main__':
     Roteadores = cadastrar_roteadores(descricao_topologia[len(Nodos) + 2:])
 
     if comando.lower() == 'ping':
-        executa_ping(Nodos, Roteadores, origem, destino)
+        executa_ping(Nodos, Roteadores)
     elif comando.lower() == 'tracerout':
-        executa_tracerout(Nodos, Roteadores, origem, destino)
+        executa_tracerout(Nodos, Roteadores)
     else:
         print("Comando invalido")
