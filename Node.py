@@ -1,18 +1,11 @@
-def get_router(gateway, roteadores):
-    for r in roteadores:
-        for g in r.ip:
-            if gateway in g:
-                return r
-    return False
+import Comando
 
 
 class Node:
     def __init__(self, dados):
-        ip_prefixo = dados[2].split('/')
         self.nome = dados[0]
         self.mac = dados[1]
-        self.ip = ip_prefixo[0]
-        self.prefixo = ip_prefixo[1]
+        self.ip = dados[2]
         self.gateway = dados[3]
         self.arp_table = []
         self.minha_rede = None
@@ -23,7 +16,14 @@ class Node:
         self.destino = None
         self.waiting_arp = None
         self.roteador = None
+        self.ttl_enviado = 0
 
+    def get_router(self, gateway):
+        for r in self.minha_rede.roteadores:
+            for g in r.ip:
+                if gateway in g:
+                    return r
+        return False
 
     def check_same_rede(self, ip_destino):  # Função para identificar se um ip está na mesma rede deste nodo
         for n in self.minha_rede.nodos:
@@ -42,7 +42,8 @@ class Node:
 
         return False
 
-    def enviar_pacote(self, tipo_pacote, para_quem=None, arp_request=None, origemComando=None, destinoComando=None, Roteadores=None):
+    def enviar_pacote(self, tipo_pacote, para_quem=None, arp_request=None, origemComando=None, destinoComando=None,
+                      Roteadores=None):
         if tipo_pacote == 'arp_request':
             self.envia_arp_request(arp_request, Roteadores)
         elif tipo_pacote == 'echo_request':
@@ -53,28 +54,35 @@ class Node:
             if self.check_same_rede(destinoComando.ip):
                 self.envia_echo_reply(destinoComando, origemComando, destinoComando)
             else:
-                z = get_router(self.gateway, self.minha_rede.roteadores)
+                z = self.get_router(self.gateway)
                 self.envia_echo_reply(z, origemComando, destinoComando)
 
-
     def envia_echo_request(self, para_quem, origemComando, destinoComando, roteadores):
-        if para_quem != self.gateway:
-            self.print_echo_request(para_quem.nome, origemComando.ip, destinoComando.ip, 8)
-            para_quem.recebe_pacote('echo_request', para_quem=para_quem, origemComando=origemComando,
-                                     destinoComando=destinoComando, quem_enviou=self, ttl=8)
+        if Comando.comando == 'ping':
+            ttl = 8
         else:
-            roteador = get_router(self.gateway, roteadores)
-            self.print_echo_request(roteador.nome, origemComando.ip, destinoComando.ip, 8)
+            ttl = self.ttl_enviado + 1
+
+        if para_quem != self.gateway:
+            self.print_echo_request(para_quem.nome, origemComando.ip, destinoComando.ip, ttl)
+            para_quem.recebe_pacote('echo_request', para_quem=para_quem, origemComando=origemComando,
+                                    destinoComando=destinoComando, quem_enviou=self, ttl=ttl)
+        else:
+            roteador = self.get_router(self.gateway)
+            self.print_echo_request(roteador.nome, origemComando.ip, destinoComando.ip, ttl)
             roteador.recebe_pacote('echo_request', para_quem=para_quem, origemComando=origemComando,
-                                     destinoComando=destinoComando, quem_enviou=self, ttl=8)
+                                   destinoComando=destinoComando, quem_enviou=self, ttl=ttl)
 
     def envia_arp_reply(self, destino, roteadores):
         self.print_arq_reply(destino.nome, destino.ip, self.mac)
         destino.recebe_pacote('arp_reply', mac=self.mac, quem_enviou=self)
 
     def envia_echo_reply(self, para_quem, origemComando, destinoComando):
-        self.print_echo_reply(para_quem.nome, origemComando.ip, destinoComando.ip, 8)
-        para_quem.recebe_pacote('echo_reply', self, para_quem=destinoComando, origemComando=origemComando, destinoComando=destinoComando, ttl=8)
+        ttl = 8
+
+        self.print_echo_reply(para_quem.nome, origemComando.ip, destinoComando.ip, ttl)
+        para_quem.recebe_pacote('echo_reply', self, para_quem=destinoComando, origemComando=origemComando,
+                                destinoComando=destinoComando, ttl=ttl)
 
     def envia_arp_request(self, arp_request, Roteadores):
 
@@ -84,10 +92,11 @@ class Node:
                 n.recebe_pacote('arp_request', arp_request=arp_request.ip, quem_enviou=self, mac=self.mac)
         else:
             self.print_arq_request(arp_request)
-            roteador = get_router(self.gateway, Roteadores)
+            roteador = self.get_router(self.gateway)
             roteador.recebe_pacote('arp_request', self, arp_request=arp_request, ip=self.ip, mac=self.mac)
 
-    def recebe_pacote(self, tipo_pacote, arp_request=None, quem_enviou=None, mac=None, origemComando=None, destinoComando=None, para_quem=None, ttl=None):
+    def recebe_pacote(self, tipo_pacote, arp_request=None, quem_enviou=None, mac=None, origemComando=None,
+                      destinoComando=None, para_quem=None, ttl=None):
         if tipo_pacote == 'arp_request':
             self.recebe_arp_request(arp_request, quem_enviou)
         elif tipo_pacote == 'arp_reply':
@@ -100,8 +109,13 @@ class Node:
             self.recebe_time_exceeded(destinoComando)
 
     def recebe_time_exceeded(self, destinoComando):
+        self.ttl_enviado += 1
         if destinoComando.nome == self.nome:
-            return
+            if Comando.comando == 'ping':
+                return
+            elif Comando.comando == 'traceroute':
+                self.tracerout(self.destino, None)
+
 
     def recebe_echo_reply(self, para_quem, origemComando, destinoComando):
         if destinoComando.nome == self.nome:
@@ -111,9 +125,8 @@ class Node:
         if destinoComando.nome == self.nome:
             self.enviar_pacote('echo_reply', origemComando=destinoComando, destinoComando=origemComando)
 
-
     def recebe_arp_reply(self, quem_enviou, mac):
-        self.arp_table.append((quem_enviou.ip, mac))
+        self.arp_table.append((quem_enviou, mac))
 
     def recebe_arp_request(self, arp_request, quem_enviou):
         if arp_request == self.ip:
@@ -121,23 +134,41 @@ class Node:
         return None
 
     def ping(self, destino, roteadores):  # Função principal para o comando PING
+        ttl = self.ttl_enviado + 1
         origem = self
         self.comando = 'ping'
         self.destino = destino
         if self.check_same_rede(destino.ip):
             if self.check_arp_table(destino):
-                self.enviar_pacote('echo_request', para_quem=destino, destinoComando=destino, origemComando=self, Roteadores=roteadores)
+                self.enviar_pacote('echo_request', para_quem=destino, destinoComando=destino, origemComando=self)
             else:
                 self.enviar_pacote('arp_request', arp_request=destino, Roteadores=roteadores)
-                self.enviar_pacote('echo_request', para_quem=destino, destinoComando=destino, origemComando=self, Roteadores=roteadores)
+                self.enviar_pacote('echo_request', para_quem=destino, destinoComando=destino, origemComando=self)
         else:
-            roteador = get_router(self.gateway, roteadores)
             if self.check_arp_table(self.gateway):
                 self.enviar_pacote(origem, destino, 'echo_request')
             else:
-                self.enviar_pacote('arp_request', arp_request=self.gateway, Roteadores=roteadores)
-                self.enviar_pacote('echo_request', para_quem=self.gateway, Roteadores=roteadores, origemComando=self, destinoComando=destino)
+                self.enviar_pacote('arp_request', arp_request=self.gateway)
+                self.enviar_pacote('echo_request', para_quem=self.gateway, origemComando=self,
+                                   destinoComando=destino)
 
+    def tracerout(self, destino, roteadores):
+        origem = self
+        self.comando = 'traceroute'
+        self.destino = destino
+        if self.check_same_rede(destino.ip):
+            if self.check_arp_table(destino):
+                self.enviar_pacote('echo_request', para_quem=destino, destinoComando=destino, origemComando=self)
+            else:
+                self.enviar_pacote('arp_request', arp_request=destino)
+                self.enviar_pacote('echo_request', para_quem=destino, destinoComando=destino, origemComando=self,
+                                   Roteadores=roteadores)
+        else:
+            if self.check_arp_table(self.gateway):
+                self.enviar_pacote('echo_request', para_quem=self.gateway, origemComando=self, destinoComando=destino)
+            else:
+                self.enviar_pacote('arp_request', arp_request=self.gateway)
+                self.enviar_pacote('echo_request', para_quem=self.gateway, origemComando=self, destinoComando=destino)
 
     def print_arq_request(self, destino_ip):
         print(f"Note over {self.nome} : ARP Request<br> Who has {destino_ip}? Tell {self.ip}")

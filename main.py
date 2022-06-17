@@ -1,9 +1,12 @@
 import os
 import sys
+
+import Comando
 from Node import Node
 from Router import *
 from Rede import *
 from RouterTable import *
+from Funcs import get_ip_rede
 
 def leitor(nome_arquivo):  # Le o arquivo e retorna uma lista em que cada posição é uma linha
     linhas = []
@@ -33,11 +36,8 @@ def cadastrar_nodos(topologia):  # Cria uma lista de objetos NODO, percorre a li
 
 def rede_triagem(nodo):
     if isinstance(nodo, Node):
-        ip = '.'
-        ip_rede = nodo.ip.split('.')[0:3]
-        ip = ip.join(ip_rede)
-        ip = ip + '.0'
-
+        ip = nodo.ip
+        ip = get_ip_rede(ip)
         existe_rede = existe_a_rede(ip)
         if existe_rede is not False:
             existe_rede.nodos.append(nodo)
@@ -48,19 +48,14 @@ def rede_triagem(nodo):
 
     elif isinstance(nodo, Router):
         for n in nodo.ip:
-            ip = '.'
-            ip_rede = n.split('.')[0:3]
-            ip = ip.join(ip_rede)
-            ip = ip + '.0'
+            ip = n
+            ip = get_ip_rede(ip)
 
             existe_rede = existe_a_rede(ip)
             if existe_rede is not False:
-                pass
+                nodo.redes.append(existe_rede)
             else:
                 cadastra_nova_rede(nodo, ip)
-
-
-
 
 def cadastra_nova_rede(nodo, ip):
     if isinstance(nodo, Node):
@@ -72,8 +67,8 @@ def cadastra_nova_rede(nodo, ip):
         nova_rede = Rede()
         nova_rede.ip = ip
         nova_rede.roteadores.append(nodo)
+        nodo.redes.append(nova_rede)
         Redes.append(nova_rede)
-
 
 
 def existe_a_rede(ip):
@@ -101,7 +96,7 @@ def adiciona_roteador_a_rede(roteador_novo):
     aux = '.'
     for r in Redes:
         for entradas in roteador_novo.ip:
-            ip = aux.join(entradas.split('/')[0].split('.')[:3])
+            ip = get_ip_rede(entradas)
             if ip in r.ip:
                 if roteador_novo not in r.roteadores:
                     r.roteadores.append(roteador_novo)
@@ -111,13 +106,11 @@ def router_table(topologia):  # Cadastra nos roteadores os RouterTables descrito
     for linha in topologia:
         for router in Roteadores:
             if linha[0] == router.nome:
-                ip = '.'
-                ip = ip.join(linha[1].split('.')[0:3])
-                ip += '.' + (linha[1].split('.')[3]).split('/')[0]
-                rede = get_rede(ip)
-                router.router_table.append(RouterTable(linha))
-                if rede is not None:
-                    router.redes.append(rede)
+                if router.router_table is None:
+                    router.router_table = RouterTable()
+                    router.router_table.add_info(linha[1:])
+                else:
+                    router.router_table.add_info(linha[1:])
 
 
 def get_rede(ip):
@@ -144,11 +137,15 @@ def executa_ping(nodos, roteadores):
 
 
 def executa_tracerout(nodos, roteadores):
-    pass
+    nodo_origem = get_nodo(nodos, origem)
+    nodo_destino = get_nodo(nodos, destino)
+    rede_origem = nodo_origem.minha_rede
+
+    nodo_origem.tracerout(nodo_destino, roteadores)
 
 
 if __name__ == '__main__':
-    argumentos = ['Topologia3.txt', 'ping', 'n1', 'n2']
+    argumentos = ['Topologia3.txt', 'traceroute', 'n1', 'n2']
     descricao_topologia = leitor(argumentos[0])
     comando = argumentos[1]
     origem = argumentos[2]
@@ -158,9 +155,10 @@ if __name__ == '__main__':
     Roteadores = cadastrar_roteadores(descricao_topologia[len(Nodos) + 2:])
     router_table(descricao_topologia[len(Nodos) + len(Roteadores) + 3:])
 
+    Comando.comando = comando.lower()
     if comando.lower() == 'ping':
         executa_ping(Nodos, Roteadores)
-    elif comando.lower() == 'tracerout':
+    elif comando.lower() == 'traceroute':
         executa_tracerout(Nodos, Roteadores)
     else:
         print("Comando invalido")
