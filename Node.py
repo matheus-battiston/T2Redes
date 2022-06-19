@@ -14,7 +14,7 @@ class Node:
         self.roteador = None
         self.ttl_enviado = 0
 
-    def get_router(self, gateway):
+    def get_router(self, gateway):  # Função para retornar o objeto roteador do gateway padrao
         for r in self.minha_rede.roteadores:
             for g in r.ip:
                 if gateway in g:
@@ -53,7 +53,8 @@ class Node:
                 z = self.get_router(self.gateway)
                 self.envia_echo_reply(z, origemComando, destinoComando)
 
-    def envia_echo_request(self, para_quem, origemComando, destinoComando):
+    def envia_echo_request(self, para_quem, origemComando, destinoComando):  # Envio do echo_request, identifica se é
+        # enviado para um nodo ou para o gateway padrao
         if Comando.comando == 'ping':
             ttl = 8
         else:
