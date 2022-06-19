@@ -18,6 +18,15 @@ class Router:
             else:
                 self.ip.append(dados[x])
 
+
+    def dados_nao_eh_local(self, destino):
+        saida = self.get_caminho(destino.ip)
+        porta = self.router_table.get_n_porta(saida)
+        rot = self.get_ip_porta(porta)
+        mac, ip = self.get_ip_and_mac(rot)
+        roteador = self.get_roteador(saida)
+        return ip, mac, rot, roteador, saida
+
     def get_caminho(self, destino):
         return self.router_table.get_caminho(destino)
 
@@ -97,14 +106,6 @@ class Router:
             if self.check_arp_table(saida):
                 self.enviar_pacote('time', para_quem=roteador, origemComando=origem, destinoComando=destino,
                                    ttl=ttl)
-
-    def dados_nao_eh_local(self, destino):
-        saida = self.get_caminho(destino.ip)
-        porta = self.router_table.get_n_porta(saida)
-        rot = self.get_ip_porta(porta)
-        mac, ip = self.get_ip_and_mac(rot)
-        roteador = self.get_roteador(saida)
-        return ip, mac, rot, roteador, saida
 
     def receber_arp_reply(self, quem_enviou, mac):
         if type(quem_enviou) == str:
