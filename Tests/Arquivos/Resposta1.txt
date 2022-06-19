@@ -1,0 +1,4 @@
+Note over n1 : ARP Request<br/>Who has 192.168.0.3? Tell 192.168.0.2
+n2 ->> n1 : ARP Reply<br/>192.168.0.3 is at 00:00:00:00:00:02
+n1 ->> n2 : ICMP Echo Request<br/>src=192.168.0.2 dst=192.168.0.3 ttl=8
+n2 ->> n1 : ICMP Echo Reply<br/>src=192.168.0.3 dst=192.168.0.2 ttl=8

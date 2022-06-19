@@ -1,0 +1,10 @@
+Note over n1 : ARP Request<br/>Who has 192.168.0.1? Tell 192.168.0.2
+r1 ->> n1 : ARP Reply<br/>192.168.0.1 is at 00:00:00:00:00:05
+n1 ->> r1 : ICMP Echo Request<br/>src=192.168.0.2 dst=192.168.1.2 ttl=1
+r1 ->> n1 : ICMP Time Exceeded<br/>src=192.168.0.1 dst=192.168.0.2 ttl=8
+n1 ->> r1 : ICMP Echo Request<br/>src=192.168.0.2 dst=192.168.1.2 ttl=2
+Note over r1 : ARP Request<br/>Who has 192.168.1.2? Tell 192.168.1.1
+n3 ->> r1 : ARP Reply<br/>192.168.1.2 is at 00:00:00:00:00:03
+r1 ->> n3 : ICMP Echo Request<br/>src=192.168.0.2 dst=192.168.1.2 ttl=1
+n3 ->> r1 : ICMP Echo Reply<br/>src=192.168.1.2 dst=192.168.0.2 ttl=8
+r1 ->> n1 : ICMP Echo Reply<br/>src=192.168.1.2 dst=192.168.0.2 ttl=7

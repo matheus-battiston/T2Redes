@@ -21,10 +21,8 @@ class Router:
     def get_caminho(self, destino):
         return self.router_table.get_caminho(destino)
 
-    def get_ip_porta(self, ip):
-        for x in self.ip:
-            if x.split('/')[0].split('.')[0:3] == ip.split('.')[0:3]:
-                return x.split('/')[0]
+    def get_ip_porta(self, n_porta):
+        return self.ip[int(n_porta)]
 
     def eh_local(self, destino):
         for x in self.ip:
@@ -86,24 +84,27 @@ class Router:
         if ttl == 0:
             return
         elif self.eh_local(destino):
-            saida = self.get_ip_porta(destino.ip)
-            rot = self.get_ip_porta(saida)
-            mac, ip = self.get_ip_and_mac(rot)
+            ip, saida = self.ip_saida(destino)
             if not self.check_arp_table(destino):
                 self.enviar_pacote('arp_request', arp_request=destino.ip, quem_enviou=saida)
             if self.check_arp_table(destino):
-                self.enviar_pacote('time', para_quem=destino, origemComando=ip, destinoComando=destino,
+                self.enviar_pacote('time', para_quem=destino, origemComando=origem, destinoComando=destino,
                                    ttl=ttl)
         else:
-            saida = self.get_caminho(destino.ip)
-            rot = self.get_ip_porta(saida)
-            mac, ip = self.get_ip_and_mac(rot)
-            roteador = self.get_roteador(saida)
+            ip, mac, rot, roteador, saida = self.dados_nao_eh_local(destino)
             if not self.check_arp_table(saida):
                 self.enviar_pacote('arp_request', arp_request=saida, quem_enviou=rot, mac=mac, ip=ip)
             if self.check_arp_table(saida):
-                self.enviar_pacote('time', para_quem=roteador, origemComando=ip, destinoComando=destino,
+                self.enviar_pacote('time', para_quem=roteador, origemComando=origem, destinoComando=destino,
                                    ttl=ttl)
+
+    def dados_nao_eh_local(self, destino):
+        saida = self.get_caminho(destino.ip)
+        porta = self.router_table.get_n_porta(saida)
+        rot = self.get_ip_porta(porta)
+        mac, ip = self.get_ip_and_mac(rot)
+        roteador = self.get_roteador(saida)
+        return ip, mac, rot, roteador, saida
 
     def receber_arp_reply(self, quem_enviou, mac):
         if type(quem_enviou) == str:
@@ -120,30 +121,20 @@ class Router:
             self.enviar_pacote('arp_reply', quem_enviou, mac=mac, arp_request=arp_request)
 
     def receber_echo_request(self, quem_enviou, para_quem, origem, destino, ttl):
-
         ttl -= 1
         if ttl == 0:
             ttl = 8
             aux = origem
-            origem = destino
             destino = aux
             if self.eh_local(destino):
-                saida = self.get_ip_porta(destino.ip)
-                if saida is None:
-                    saida = self.get_roteador_routertable(destino)
-
-                rot = self.get_ip_porta(saida)
-                mac, ip = self.get_ip_and_mac(rot)
+                ip, saida = self.ip_saida(destino)
                 if not self.check_arp_table(destino):
                     self.enviar_pacote('arp_request', arp_request=destino.ip, quem_enviou=saida)
                 if self.check_arp_table(destino):
                     self.enviar_pacote('time', para_quem=destino, origemComando=ip, destinoComando=destino,
                                        ttl=ttl)
             else:
-                saida = self.get_caminho(destino.ip)
-                rot = self.get_ip_porta(saida)
-                mac, ip = self.get_ip_and_mac(rot)
-                roteador = self.get_roteador(saida)
+                ip, mac, rot, roteador, saida = self.dados_nao_eh_local(destino)
 
                 if not self.check_arp_table(saida):
                     self.enviar_pacote('arp_request', arp_request=saida, quem_enviou=rot, mac=mac, ip=ip)
@@ -152,22 +143,26 @@ class Router:
                                        ttl=ttl)
 
         elif self.eh_local(destino):
-            saida = self.get_ip_porta(destino.ip)
+            ip, saida = self.ip_saida(destino)
             if not self.check_arp_table(destino):
-                self.enviar_pacote('arp_request', arp_request=destino.ip, quem_enviou=saida)
+                self.enviar_pacote('arp_request', arp_request=destino.ip, quem_enviou=ip)
             if self.check_arp_table(destino):
                 self.enviar_pacote('echo_request', para_quem=destino, origemComando=origem, destinoComando=destino,
-                                   quem_enviou=quem_enviou, ttl=ttl)
+                                   ttl=ttl)
         else:
-            saida = self.get_caminho(destino.ip)
-            rot = self.get_ip_porta(saida)
-            mac, ip = self.get_ip_and_mac(rot)
-            roteador = self.get_roteador(saida)
+            ip, mac, rot, roteador, saida = self.dados_nao_eh_local(destino)
             if not self.check_arp_table(saida):
                 self.enviar_pacote('arp_request', arp_request=saida, quem_enviou=rot, mac=mac, ip=ip)
             if self.check_arp_table(saida):
                 self.enviar_pacote('echo_request', para_quem=roteador, origemComando=origem, destinoComando=destino,
                                    ttl=ttl)
+
+    def ip_saida(self, destino):
+        rede_destino = get_ip_rede(destino.ip)
+        porta = self.router_table.get_n_porta(rede_destino)
+        saida = self.get_ip_porta(porta)
+        mac, ip = self.get_ip_and_mac(saida)
+        return ip, saida
 
     def receber_echo_reply(self, quem_enviou, origem, destino, para_quem, ttl):
 
@@ -178,34 +173,28 @@ class Router:
             origem = destino
             destino = aux
             if self.eh_local(destino):
-                saida = self.get_ip_porta(destino.ip)
+                ip, saida = self.ip_saida(destino)
                 if not self.check_arp_table(destino):
                     self.enviar_pacote('arp_request', arp_request=destino.ip, quem_enviou=saida)
                 if self.check_arp_table(destino):
                     self.enviar_pacote('time', para_quem=destino, origemComando=origem, destinoComando=destino,
                                        ttl=ttl)
             else:
-                saida = self.get_caminho(destino.ip)
-                rot = self.get_ip_porta(saida)
-                mac, ip = self.get_ip_and_mac(rot)
-                roteador = self.get_roteador(saida)
+                ip, mac, rot, roteador, saida = self.dados_nao_eh_local(destino)
                 if not self.check_arp_table(saida):
                     self.enviar_pacote('arp_request', arp_request=saida, quem_enviou=rot, mac=mac, ip=ip)
                 if self.check_arp_table(saida):
                     self.enviar_pacote('time', para_quem=roteador, origemComando=ip, destinoComando=destino,
                                        ttl=ttl)
         elif self.eh_local(destino):
-            saida = self.get_ip_porta(destino.ip)
+            ip, saida = self.ip_saida(destino)
             if not self.check_arp_table(destino):
                 self.enviar_pacote('arp_request', arp_request=destino.ip, quem_enviou=saida)
             if self.check_arp_table(destino):
                 self.enviar_pacote('echo_reply', para_quem=destino, origemComando=origem, destinoComando=destino,
-                                   quem_enviou=quem_enviou, ttl=ttl)
+                                   ttl=ttl)
         else:
-            saida = self.get_caminho(destino.ip)
-            rot = self.get_ip_porta(saida)
-            mac, ip = self.get_ip_and_mac(rot)
-            roteador = self.get_roteador(saida)
+            ip, mac, rot, roteador, saida = self.dados_nao_eh_local(destino)
             if not self.check_arp_table(saida):
                 self.enviar_pacote('arp_request', arp_request=saida, quem_enviou=rot, mac=mac, ip=ip)
             if self.check_arp_table(saida):
@@ -217,7 +206,7 @@ class Router:
         if tipo_do_pacote == 'arp_request':
             self.enviar_arp_request(arp_request, quem_enviou, mac, ip)
         elif tipo_do_pacote == 'echo_request':
-            self.enviar_echo_request(para_quem, origemComando, destinoComando, quem_enviou, ttl)
+            self.enviar_echo_request(para_quem, origemComando, destinoComando,  ttl)
         elif tipo_do_pacote == 'echo_reply':
             self.enviar_echo_reply(para_quem, origemComando, destinoComando, ttl)
         elif tipo_do_pacote == 'arp_reply':
@@ -226,7 +215,7 @@ class Router:
             self.enviar_time_exceeded(para_quem, origemComando, destinoComando, ttl)
 
     def enviar_time_exceeded(self, para_quem, origem, destino, ttl):
-        if ttl == None:
+        if ttl is None:
             ttl = 8
         self.print_time_exeeded(self.nome, para_quem.nome, origem, destino.ip, ttl)
         para_quem.recebe_pacote('time', quem_enviou=self, origemComando=origem, destinoComando=destino, ttl=ttl)
@@ -243,14 +232,14 @@ class Router:
             for nod in r.nodos:
                 nod.recebe_pacote('arp_request', quem_enviou=self, para_quem=nod, arp_request=destino)
 
-    def enviar_echo_request(self, para_quem, origem, destino, quem_enviou, ttl):
+    def enviar_echo_request(self, para_quem, origem, destino, ttl):
         self.print_echo_request(self.nome, para_quem.nome, origem.ip, destino.ip, ttl)
         para_quem.recebe_pacote('echo_request', quem_enviou=self, para_quem=destino, origemComando=origem,
                                 destinoComando=destino, ttl=ttl)
 
     def enviar_echo_reply(self, para_quem, origem, destino, ttl):
         self.print_echo_reply(self.nome, para_quem.nome, origem.ip, destino.ip, ttl)
-        para_quem.recebe_pacote('echo_reply', origemComando=origem, destinoComando=destino, quem_enviou=self, ttl=ttl)
+        para_quem.recebe_pacote('echo_reply', origemComando=origem, destinoComando=destino, quem_enviou=self, ttl=ttl, para_quem=destino)
 
     def enviar_arp_reply(self, destino, arp_request=None, mac=None):
         if isinstance(destino, Node):
@@ -263,16 +252,25 @@ class Router:
             destino.recebe_pacote('arp_reply', mac=mac, quem_enviou=ip)
 
     def print_arq_request(self, destino_ip, ip_porta):
-        print(f"Note over {self.nome} : ARP Request<br> Who has {destino_ip}? Tell {ip_porta}")
+        destino_ip = destino_ip.split('/')[0]
+        ip_porta = ip_porta.split('/')[0]
+        print(f"Note over {self.nome} : ARP Request<br/>Who has {destino_ip}? Tell {ip_porta}")
 
     def print_arp_reply(self, dst_name, src_ip, src_mac):
-        print(f"{self.nome} ->> {dst_name} : ARP Reply<br>/{src_ip} is at {src_mac}")
+        src_ip = src_ip.split('/')[0]
+        print(f"{self.nome} ->> {dst_name} : ARP Reply<br/>{src_ip} is at {src_mac}")
 
     def print_echo_request(self, src_name, dst_name, src_ip, dst_ip, ttl):
+        src_ip = src_ip.split('/')[0]
+        dst_ip = dst_ip.split('/')[0]
         print(f"{src_name} ->> {dst_name} : ICMP Echo Request<br/>src={src_ip} dst={dst_ip} ttl={ttl}")
 
     def print_echo_reply(self, src_name, dst_name, src_ip, dst_ip, ttl):
-        print(f"{src_name} ->> {dst_name} : ICMP Echo Reply<br/>src={src_ip} dst={dst_ip} ttl={ttl} ")
+        src_ip = src_ip.split('/')[0]
+        dst_ip = dst_ip.split('/')[0]
+        print(f"{src_name} ->> {dst_name} : ICMP Echo Reply<br/>src={src_ip} dst={dst_ip} ttl={ttl}")
 
     def print_time_exeeded(self, src_name, dst_name, src_ip, dst_ip, ttl):
+        src_ip = src_ip.split('/')[0]
+        dst_ip = dst_ip.split('/')[0]
         print(f"{src_name} ->> {dst_name} : ICMP Time Exceeded<br/>src={src_ip} dst={dst_ip} ttl={ttl}")

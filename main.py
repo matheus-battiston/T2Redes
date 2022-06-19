@@ -143,9 +143,8 @@ def executa_tracerout(nodos, roteadores):
 
     nodo_origem.tracerout(nodo_destino, roteadores)
 
-
-if __name__ == '__main__':
-    argumentos = ['Topologia3.txt', 'traceroute', 'n1', 'n2']
+def main(argumentos):
+    global origem, destino, Redes, Nodos, Roteadores
     descricao_topologia = leitor(argumentos[0])
     comando = argumentos[1]
     origem = argumentos[2]
@@ -162,3 +161,9 @@ if __name__ == '__main__':
         executa_tracerout(Nodos, Roteadores)
     else:
         print("Comando invalido")
+
+
+if __name__ == '__main__':
+    argumentos = ['Topologia.txt', 'ping', 'n1', 'n3']
+    main(argumentos)
+

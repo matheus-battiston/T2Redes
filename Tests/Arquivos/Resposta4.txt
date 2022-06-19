@@ -1,0 +1,18 @@
+Note over n1 : ARP Request<br/>Who has 160.10.128.1? Tell 160.10.128.10
+r1 ->> n1 : ARP Reply<br/>160.10.128.1 is at 00:00:00:00:00:10
+n1 ->> r1 : ICMP Echo Request<br/>src=160.10.128.10 dst=240.20.10.10 ttl=1
+r1 ->> n1 : ICMP Time Exceeded<br/>src=160.10.128.1 dst=160.10.128.10 ttl=8
+n1 ->> r1 : ICMP Echo Request<br/>src=160.10.128.10 dst=240.20.10.10 ttl=2
+Note over r1 : ARP Request<br/>Who has 160.10.0.1? Tell 160.10.0.2
+r2 ->> r1 : ARP Reply<br/>160.10.0.1 is at 00:00:00:00:00:20
+r1 ->> r2 : ICMP Echo Request<br/>src=160.10.128.10 dst=240.20.10.10 ttl=1
+r2 ->> r1 : ICMP Time Exceeded<br/>src=160.10.0.1 dst=160.10.128.10 ttl=8
+r1 ->> n1 : ICMP Time Exceeded<br/>src=160.10.0.1 dst=160.10.128.10 ttl=7
+n1 ->> r1 : ICMP Echo Request<br/>src=160.10.128.10 dst=240.20.10.10 ttl=3
+r1 ->> r2 : ICMP Echo Request<br/>src=160.10.128.10 dst=240.20.10.10 ttl=2
+Note over r2 : ARP Request<br/>Who has 240.20.10.10? Tell 240.20.0.1
+n2 ->> r2 : ARP Reply<br/>240.20.10.10 is at 00:00:00:00:00:02
+r2 ->> n2 : ICMP Echo Request<br/>src=160.10.128.10 dst=240.20.10.10 ttl=1
+n2 ->> r2 : ICMP Echo Reply<br/>src=240.20.10.10 dst=160.10.128.10 ttl=8
+r2 ->> r1 : ICMP Echo Reply<br/>src=240.20.10.10 dst=160.10.128.10 ttl=7
+r1 ->> n1 : ICMP Echo Reply<br/>src=240.20.10.10 dst=160.10.128.10 ttl=6

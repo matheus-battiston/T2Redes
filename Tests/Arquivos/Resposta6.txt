@@ -1,0 +1,28 @@
+Note over n1 : ARP Request<br/>Who has 10.0.0.1? Tell 10.0.0.10
+r1 ->> n1 : ARP Reply<br/>10.0.0.1 is at 00:00:00:00:00:10
+n1 ->> r1 : ICMP Echo Request<br/>src=10.0.0.10 dst=40.0.0.10 ttl=1
+r1 ->> n1 : ICMP Time Exceeded<br/>src=10.0.0.1 dst=10.0.0.10 ttl=8
+n1 ->> r1 : ICMP Echo Request<br/>src=10.0.0.10 dst=40.0.0.10 ttl=2
+Note over r1 : ARP Request<br/>Who has 20.0.0.2? Tell 20.0.0.1
+r2 ->> r1 : ARP Reply<br/>20.0.0.2 is at 00:00:00:00:00:20
+r1 ->> r2 : ICMP Echo Request<br/>src=10.0.0.10 dst=40.0.0.10 ttl=1
+r2 ->> r1 : ICMP Time Exceeded<br/>src=20.0.0.2 dst=10.0.0.10 ttl=8
+r1 ->> n1 : ICMP Time Exceeded<br/>src=20.0.0.2 dst=10.0.0.10 ttl=7
+n1 ->> r1 : ICMP Echo Request<br/>src=10.0.0.10 dst=40.0.0.10 ttl=3
+r1 ->> r2 : ICMP Echo Request<br/>src=10.0.0.10 dst=40.0.0.10 ttl=2
+Note over r2 : ARP Request<br/>Who has 30.0.0.2? Tell 30.0.0.1
+r3 ->> r2 : ARP Reply<br/>30.0.0.2 is at 00:00:00:00:00:30
+r2 ->> r3 : ICMP Echo Request<br/>src=10.0.0.10 dst=40.0.0.10 ttl=1
+Note over r3 : ARP Request<br/>Who has 50.0.0.1? Tell 50.0.0.2
+r1 ->> r3 : ARP Reply<br/>50.0.0.1 is at 00:00:00:00:00:12
+r3 ->> r1 : ICMP Time Exceeded<br/>src=50.0.0.2 dst=10.0.0.10 ttl=8
+r1 ->> n1 : ICMP Time Exceeded<br/>src=50.0.0.2 dst=10.0.0.10 ttl=7
+n1 ->> r1 : ICMP Echo Request<br/>src=10.0.0.10 dst=40.0.0.10 ttl=4
+r1 ->> r2 : ICMP Echo Request<br/>src=10.0.0.10 dst=40.0.0.10 ttl=3
+r2 ->> r3 : ICMP Echo Request<br/>src=10.0.0.10 dst=40.0.0.10 ttl=2
+Note over r3 : ARP Request<br/>Who has 40.0.0.10? Tell 40.0.0.1
+n2 ->> r3 : ARP Reply<br/>40.0.0.10 is at 00:00:00:00:00:02
+r3 ->> n2 : ICMP Echo Request<br/>src=10.0.0.10 dst=40.0.0.10 ttl=1
+n2 ->> r3 : ICMP Echo Reply<br/>src=40.0.0.10 dst=10.0.0.10 ttl=8
+r3 ->> r1 : ICMP Echo Reply<br/>src=40.0.0.10 dst=10.0.0.10 ttl=7
+r1 ->> n1 : ICMP Echo Reply<br/>src=40.0.0.10 dst=10.0.0.10 ttl=6

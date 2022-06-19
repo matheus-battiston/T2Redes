@@ -66,7 +66,7 @@ class Node:
         else:
             roteador = self.get_router(self.gateway)
             self.print_echo_request(roteador.nome, origemComando.ip, destinoComando.ip, ttl)
-            roteador.recebe_pacote('echo_request', para_quem=para_quem, origemComando=origemComando,
+            roteador.recebe_pacote('echo_request', para_quem=roteador, origemComando=origemComando,
                                    destinoComando=destinoComando, quem_enviou=self, ttl=ttl)
 
     def envia_arp_reply(self, destino):
@@ -142,7 +142,7 @@ class Node:
                 self.enviar_pacote('echo_request', para_quem=destino, destinoComando=destino, origemComando=self)
         else:
             if self.check_arp_table(self.gateway):
-                self.enviar_pacote(origem, destino, 'echo_request')
+                self.enviar_pacote('echo_request', para_quem=self.gateway, origemComando=self, destinoComando=destino)
             else:
                 self.enviar_pacote('arp_request', arp_request=self.gateway)
                 self.enviar_pacote('echo_request', para_quem=self.gateway, origemComando=self,
@@ -159,23 +159,32 @@ class Node:
                 self.enviar_pacote('echo_request', para_quem=destino, destinoComando=destino, origemComando=self,
                                    Roteadores=roteadores)
         else:
+            envio = self.get_router(self.gateway)
+
             if self.check_arp_table(self.gateway):
-                self.enviar_pacote('echo_request', para_quem=self.gateway, origemComando=self, destinoComando=destino)
+                self.enviar_pacote('echo_request', para_quem=envio, origemComando=self, destinoComando=destino)
             else:
                 self.enviar_pacote('arp_request', arp_request=self.gateway)
-                self.enviar_pacote('echo_request', para_quem=self.gateway, origemComando=self, destinoComando=destino)
+                self.enviar_pacote('echo_request', para_quem=envio, origemComando=self, destinoComando=destino)
 
     def print_arq_request(self, destino_ip):
-        print(f"Note over {self.nome} : ARP Request<br> Who has {destino_ip}? Tell {self.ip}")
+        destino_ip = destino_ip.split('/')[0]
+        ip = self.ip.split('/')[0]
+        print(f"Note over {self.nome} : ARP Request<br/>Who has {destino_ip}? Tell {ip}")
 
     def print_arq_reply(self, quem_recebe, destino, src_mac):
-        print(f"{self.nome} ->> {quem_recebe} : ARP Reply<br>/{self.ip} is at {src_mac}")
+        ip = self.ip.split('/')[0]
+        print(f"{self.nome} ->> {quem_recebe} : ARP Reply<br/>{ip} is at {src_mac}")
 
     def print_echo_request(self, quem_recebe, origem, destino, ttl):
+        origem = origem.split('/')[0]
+        destino = destino.split('/')[0]
         print(f"{self.nome} ->> {quem_recebe} : ICMP Echo Request<br/>src={origem} dst={destino} ttl={ttl}")
 
     def print_echo_reply(self, quem_recebe, origem, destino, ttl):
-        print(f"{self.nome} ->> {quem_recebe} : ICMP Echo Reply<br/>src={origem} dst={destino} ttl={ttl} ")
+        origem = origem.split('/')[0]
+        destino = destino.split('/')[0]
+        print(f"{self.nome} ->> {quem_recebe} : ICMP Echo Reply<br/>src={origem} dst={destino} ttl={ttl}")
 
     def print_time_exeeded(self, dst_name, dst_ip, ttl):
         print(f"{self.nome} ->> {dst_name} : ICMP Time Exceeded<br/>src={self.ip} dst={dst_ip} ttl={ttl}")

@@ -22,3 +22,11 @@ class RouterTable:
             if x.split('/')[0] == '0.0.0.0':
                 return self.nexthop[enum]
 
+    def get_n_porta(self, ip):
+        for enum, x in enumerate(self.nexthop):
+            if ip == x.split('/')[0]:
+                return self.porta[enum]
+        for enum, x in enumerate(self.nexthop):
+            if x.split('/')[0] == '0.0.0.0':
+                if self.net_dest[enum].split('/')[0] == ip:
+                    return self.porta[enum]
