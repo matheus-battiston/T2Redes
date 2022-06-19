@@ -62,12 +62,12 @@ class Node:
 
         if para_quem != self.gateway:
             self.print_echo_request(para_quem.nome, origemComando.ip, destinoComando.ip, ttl)
-            para_quem.recebe_pacote('echo_request', para_quem=para_quem, origemComando=origemComando,
+            para_quem.recebe_pacote('echo_request', origemComando=origemComando,
                                     destinoComando=destinoComando, quem_enviou=self, ttl=ttl)
         else:
             roteador = self.get_router(self.gateway)
             self.print_echo_request(roteador.nome, origemComando.ip, destinoComando.ip, ttl)
-            roteador.recebe_pacote('echo_request', para_quem=roteador, origemComando=origemComando,
+            roteador.recebe_pacote('echo_request', origemComando=origemComando,
                                    destinoComando=destinoComando, quem_enviou=self, ttl=ttl)
 
     def envia_arp_reply(self, destino):

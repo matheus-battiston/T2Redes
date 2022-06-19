@@ -120,9 +120,9 @@ class Router:
         if tipo_do_pacote == 'arp_request':
             self.receber_arp_request(quem_enviou, arp_request, mac, ip)
         elif tipo_do_pacote == 'echo_request':
-            self.receber_echo_request(quem_enviou, para_quem, origemComando, destinoComando, ttl)
+            self.receber_echo_request(origemComando, destinoComando, ttl)
         elif tipo_do_pacote == 'echo_reply':
-            self.receber_echo_reply(quem_enviou, origemComando, destinoComando, para_quem, ttl)
+            self.receber_echo_reply(origemComando, destinoComando, ttl)
         elif tipo_do_pacote == 'arp_reply':
             self.receber_arp_reply(quem_enviou, mac)
         elif tipo_do_pacote == 'time':
@@ -151,7 +151,7 @@ class Router:
             self.arp_table.append((ip, mac))
             self.enviar_pacote('arp_reply', quem_enviou, arp_request=arp_request)
 
-    def receber_echo_request(self, quem_enviou, para_quem, origem, destino, ttl):  # Recebimento do echo request.
+    def receber_echo_request(self, origem, destino, ttl):  # Recebimento do echo request.
         # Faz o decremento do ttl e define se deve ser o echo request deve ser encaminhado ou enviado um time exceeded.
         # Chama as funções para encaminhar nos dois casos
         ttl -= 1
@@ -170,7 +170,7 @@ class Router:
         else:
             self.prepara_echo_longe('echo_request', origem, destino, ttl)
 
-    def receber_echo_reply(self, quem_enviou, origem, destino, para_quem, ttl):  # Igual recebimento de echo request
+    def receber_echo_reply(self, origem, destino, ttl):  # Igual recebimento de echo request
 
         ttl -= 1
         if ttl == 0:
@@ -199,7 +199,7 @@ class Router:
         elif tipo_do_pacote == 'echo_reply':
             self.enviar_echo_reply(para_quem, origemComando, destinoComando, ttl)
         elif tipo_do_pacote == 'arp_reply':
-            self.enviar_arp_reply(para_quem, arp_request, mac)
+            self.enviar_arp_reply(para_quem, arp_request)
         elif tipo_do_pacote == 'time':
             self.enviar_time_exceeded(para_quem, origemComando, destinoComando, ttl)
 
@@ -222,7 +222,7 @@ class Router:
             for nod in r.nodos:
                 nod.recebe_pacote('arp_request', quem_enviou=self, para_quem=nod, arp_request=destino)
 
-    def enviar_echo_request(self, para_quem, origem, destino, ttl): # Função de envio do echo_request.
+    def enviar_echo_request(self, para_quem, origem, destino, ttl):  # Função de envio do echo_request.
         # Faz o print e chama a função de receber pacote de para quem deve ser enviado (Identificado em para_quem)
         self.print_echo_request(self.nome, para_quem.nome, origem.ip, destino.ip, ttl)
         para_quem.recebe_pacote('echo_request', quem_enviou=self, para_quem=destino, origemComando=origem,
@@ -235,7 +235,7 @@ class Router:
         para_quem.recebe_pacote('echo_reply', origemComando=origem, destinoComando=destino, quem_enviou=self, ttl=ttl,
                                 para_quem=destino)
 
-    def enviar_arp_reply(self, destino, arp_request=None, mac=None):
+    def enviar_arp_reply(self, destino, arp_request=None):
         # Função de envio do arp_reply.
         if isinstance(destino, Node):
             mac, ip = self.get_ip_and_mac(destino.gateway)
